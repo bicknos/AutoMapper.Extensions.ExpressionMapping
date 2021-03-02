@@ -12,6 +12,34 @@
     public class ExpressionMappingWithUseAsDataSource
     {
         [Fact]
+        public void Can_Use_Same_Type_In_Select()
+        {
+            // Arrange
+            var mapper = CreateMapper();
+
+            var models = new List<Model>()
+            {
+                new Model { ABoolean = true },
+                new Model { ABoolean = false },
+                new Model { ABoolean = true },
+                new Model { ABoolean = false }
+            };
+
+            var queryable = models.AsQueryable();
+
+            // Act
+            var result = queryable
+                .UseAsDataSource(mapper)
+                .For<ModelEntity>()
+                .Select(x => new ModelEntity { ABoolean = x.ABoolean })
+                .ToList();
+
+            // Assert
+            result.ShouldNotBeNull();
+            result.Count.ShouldBe(4);
+        }
+
+        [Fact]
         public void When_Apply_Where_Clause_Over_Queryable_As_Data_Source()
         {
             // Arrange
@@ -75,6 +103,7 @@
         {
             var mapperConfig = new MapperConfiguration(cfg =>
             {
+                cfg.CreateMap<Model, ModelEntity>();
                 cfg.CreateMap<Model, DTO>()
                     .ForMember(d => d.Nested, opt => opt.MapFrom(s => s));
                 cfg.CreateMap<Model, DTO.DTONested>()
@@ -106,10 +135,14 @@
             public bool ABoolean { get; set; }
         }
 
-
         private class GenericModel<T>
         {
             public T ABoolean { get; set; }
+        }
+
+        private class ModelEntity
+        {
+            public object ABoolean { get; internal set; }
         }
     }
 }
