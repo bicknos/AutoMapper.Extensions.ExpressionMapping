@@ -40,6 +40,34 @@
         }
 
         [Fact]
+        public void Can_Use_Same_Type_In_Select_With_Child()
+        {
+            // Arrange
+            var mapper = CreateMapper();
+
+            var models = new List<Model>()
+            {
+                new Model { Child = new ModelChild() { ABoolean = true } },
+                new Model { Child = new ModelChild() { ABoolean = false } }
+            };
+
+            var queryable = models.AsQueryable();
+
+            // Act
+            var result = queryable
+                .UseAsDataSource(mapper)
+                .For<ModelEntity>()
+                .Select(x => new ModelEntity { Child = new ModelEntityChild() { ABoolean = x.Child.ABoolean } })
+                .ToList();
+
+            // Assert
+            result.ShouldNotBeNull();
+            result.First().Child.ABoolean.ShouldBeTrue();
+            result.Last().Child.ABoolean.ShouldBeFalse();
+            result.Count.ShouldBe(2);
+        }
+
+        [Fact]
         public void When_Apply_Where_Clause_Over_Queryable_As_Data_Source()
         {
             // Arrange
@@ -104,6 +132,7 @@
             var mapperConfig = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<Model, ModelEntity>();
+                cfg.CreateMap<ModelChild, ModelEntityChild>();
                 cfg.CreateMap<Model, DTO>()
                     .ForMember(d => d.Nested, opt => opt.MapFrom(s => s));
                 cfg.CreateMap<Model, DTO.DTONested>()
@@ -133,6 +162,7 @@
         private class Model
         {
             public bool ABoolean { get; set; }
+            public ModelChild Child { get; internal set; }
         }
 
         private class GenericModel<T>
@@ -143,6 +173,21 @@
         private class ModelEntity
         {
             public object ABoolean { get; internal set; }
+            public ModelEntityChild Child { get; internal set; }
         }
+    }
+
+    internal class ModelEntityChild
+    {
+        public ModelEntityChild()
+        {
+        }
+
+        public bool ABoolean { get; set; }
+    }
+
+    internal class ModelChild
+    {
+        public bool ABoolean { get; set; }
     }
 }

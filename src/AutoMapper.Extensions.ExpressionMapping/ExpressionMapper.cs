@@ -130,14 +130,34 @@ namespace AutoMapper.Mappers
                             return list;
 
                         Expression bindingExpression = ((MemberAssignment)binding).Expression;
-                        list.Add
-                        (
-                            DoBind
+
+                        var subSourceType = (sourceMember as PropertyInfo).PropertyType;
+                        var subDestinationType = propertyMap.DestinationType;
+                        var subTypeMap = _configurationProvider.ResolveTypeMap(sourceType: subSourceType, destinationType: subDestinationType);
+
+                        Expression mapped;
+                        if (subTypeMap == null)
+                        {
+                            mapped = this.Visit(bindingExpression);
+                        }
+                        else
+                        {
+                            var visitor = new ExpressionMapper.MappingVisitor(_configurationProvider, subTypeMap, bindingExpression, Expression.New(subSourceType), this,
+                                 new[] { sourceMember.GetType() });
+
+                            mapped = visitor.Visit(bindingExpression);
+                        }
+
+                        var bindingthing = DoBind
                             (
                                 sourceMember,
                                 bindingExpression,
-                                this.Visit(bindingExpression)
-                            )
+                                mapped
+                            );
+
+                        list.Add
+                        (
+                            bindingthing
                         );
 
                         return list;
